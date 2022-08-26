@@ -25,18 +25,64 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
+#Get ALL members
 @app.route('/members', methods=['GET'])
 def handle_hello():
 
     # this is how you can use the Family datastructure by calling its methods
     members = jackson_family.get_all_members()
-    response_body = {
-        "hello": "world",
-        "family": members
+
+
+    return jsonify(members), 200
+
+#Get Member by ID
+@app.route('/member/<int:member_id>', methods=['GET','DELETE'])
+def get_delete_user_id(member_id):
+    if request.method == 'GET':
+        members = jackson_family.get_all_members()
+        for member in members:
+            if member_id == member['id']:
+                return jsonify(member), 200
+
+        return jsonify({"msg" : "User not found!"}),404
+
+    if request.method ==  'DELETE':
+        members = jackson_family.get_all_members()
+        for member in members:
+            if member_id == member['id']:
+                members.pop(members.index(member))
+                return jsonify({"done" : True}),200
+
+        return jsonify({"msg" : "User not found!"}),404
+
+@app.route('/member', methods=['POST'])
+def post_user():
+    new_member = {
+        "first_name" : '',
+        "last_name": "Jackson",
+        "age": '',
+        "lucky_numbers": [],
+        "id": ''
     }
 
+    if(request.json.get('first_name')): new_member["first_name"] = request.json.get("first_name")
+    else: return jsonify({"msg" : "First name is required!"}),400
 
-    return jsonify(response_body), 200
+    if(request.json.get("last_name")): return jsonify({"msg" : "Last name is not required!"}),400
+
+    if(request.json.get("age")): new_member["age"] = request.json.get("age")
+    else: return jsonify({"msg" : "Age is required!"}),400
+
+    if(request.json.get("lucky_numbers")): new_member["lucky_numbers"] = request.json.get("lucky_numbers")
+    else: return jsonify({"msg" : "Lucky Numbers are required!"}),400
+
+    if(request.json.get('id')): new_member["id"] = request.json.get("id")
+    else: new_member["id"] = jackson_family._generateId()
+
+    jackson_family.add_member(new_member)
+    
+    return jsonify({"msg" : "success"}),200
+
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
